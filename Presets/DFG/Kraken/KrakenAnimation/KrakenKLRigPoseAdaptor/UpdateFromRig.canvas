@@ -1,0 +1,54 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  this: KrakenKLRigPoseAdaptor\n  context: KrakenClipContext\n  rig: KrakenKLRig\n  character: Character\n"
+    },
+  "title" : "UpdateFromRig",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "this",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "KrakenKLRigPoseAdaptor"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "context",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "KrakenClipContext"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "rig",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "KrakenKLRig"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "character",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "Character"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "4ABD5BFE8BAF229093433E6A09B489F8",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  this.updateFromRig(context, rig, character);
+}
+"
+  }

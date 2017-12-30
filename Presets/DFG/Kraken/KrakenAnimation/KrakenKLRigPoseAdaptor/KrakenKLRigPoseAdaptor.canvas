@@ -1,0 +1,47 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  rig: KrakenKLRig\n  character: Character\n  result: KrakenKLRigPoseAdaptor\n"
+    },
+  "title" : "KrakenKLRigPoseAdaptor",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "rig",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "KrakenKLRig"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "character",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "Character"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "result",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "KrakenKLRigPoseAdaptor"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "C1940FF079F6781CDD6B9A6859FB4B47",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  result = KrakenKLRigPoseAdaptor(rig, character);
+}
+"
+  }

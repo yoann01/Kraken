@@ -1,0 +1,73 @@
+require InlineDrawing;
+require Geometry;
+
+object MultiPoseConstraintSolver : KrakenSolver {
+};
+
+// Default Constructor
+/// \dfgPresetTitle MultiPoseConstraintSolver_Constructor
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\MultiPoseConstraintSolver
+function MultiPoseConstraintSolver()
+{
+
+}
+
+// Return Arguments for Kraken
+/// \dfgPresetOmit
+function KrakenSolverArg[] MultiPoseConstraintSolver.getArguments(){
+  KrakenSolverArg args[] = this.parent.getArguments();
+  args.push(KrakenSolverArg('constrainers', 'In', 'Mat44[]'));
+  args.push(KrakenSolverArg('constrainees', 'Out', 'Mat44[]'));
+  return args;
+}
+
+
+// Solve
+/// \dfgPresetTitle MultiPoseConstraintSolver_Solve
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\MultiPoseConstraintSolver
+function MultiPoseConstraintSolver.solve!
+(
+  in Boolean drawDebug,
+  in Scalar rigScale,
+  in Mat44 constrainers[],
+  io Mat44 constrainees[]
+  )
+{
+  if(constrainers.size() != 1 && constrainers.size() != constrainees.size())
+    throw("Error in MultiPoseConstraintSolver. The number of constrainees must be 1 or match the number of constrainers. constrainers.size:" + constrainers.size() + "; constrainees.size:" + constrainees.size());
+
+  if(constrainees.size() == 1){
+    Xfo xfo();
+    for(UInt32 i=0; i<constrainers.size(); i++){
+      Xfo constrainersXfo(constrainers[i]);
+      xfo.tr += constrainersXfo.tr;
+      xfo.ori += constrainersXfo.ori;
+      xfo.sc += constrainersXfo.sc;
+    }
+    xfo.tr /= Scalar(constrainers.size());
+    xfo.ori.setUnit();
+    xfo.sc /= Scalar(constrainers.size());
+    constrainees[0] = xfo.toMat44();
+  }
+  else{
+    for(UInt32 i=0; i<constrainers.size(); i++)
+      constrainees[i] = constrainers[i];
+  }
+
+  // Set debugging visibility.
+  this.setDebug(drawDebug);
+  if(this.drawDebug){
+    if(!this.handle)
+      this.handle = DrawingHandle();
+
+    Color debugColor(0.0, 0.0, 1.0);
+    for(UInt32 i=0; i<constrainers.size(); i++)
+      drawCross(this.handle.rootTransform, 'constraint' + i, Xfo(constrainees[i]), 0.5, debugColor);
+  }
+}

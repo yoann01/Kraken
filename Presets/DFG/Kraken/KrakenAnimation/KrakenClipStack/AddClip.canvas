@@ -1,0 +1,50 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  this: KrakenClipStack\n  clip: KrakenClip\n  weight: Float32\n"
+    },
+  "title" : "AddClip",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "this",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "KrakenClipStack"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "clip",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "KrakenClip"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "weight",
+      "nodePortType" : "Out",
+      "defaultValues" : {
+        "Float32" : 1
+        },
+      "execPortType" : "In",
+      "typeSpec" : "Float32"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "D91DF2CDCDCE03FD688609D028B24A1B",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  this.addClip(clip, weight);
+}
+"
+  }

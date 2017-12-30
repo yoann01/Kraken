@@ -1,0 +1,25 @@
+/// \dfgPresetOmit
+struct KrakenSolverArg {
+    String name;
+    String connectionType;
+    String dataType;
+};
+
+
+// Default Constructor
+/// \dfgPresetOmit
+inline KrakenSolverArg()
+{
+
+}
+
+/// \dfgPresetOmit
+inline KrakenSolverArg(
+  String name,
+  String connectionType,
+  String dataType)
+{
+  this.name = name;
+  this.connectionType = connectionType;
+  this.dataType = dataType;
+}

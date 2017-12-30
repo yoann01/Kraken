@@ -1,0 +1,40 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  this: KrakenClip, KrakenStaticClip, KrakenAbcClip, KrakenClipStack, KrakenRotationWaveClip\n  result: UInt32\n"
+    },
+  "title" : "GetChannelCount",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "this",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "$TYPE$"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "result",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "UInt32"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "B220653FD65C011F7EC23E282C489F15",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  result = this.getChannelCount();
+}
+"
+  }

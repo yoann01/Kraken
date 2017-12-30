@@ -1,0 +1,85 @@
+require Kraken;
+
+struct KrakenControl : KrakenCurve {
+};
+
+/// \dfgPresetFolder Objects
+function KrakenControl(
+  String name,
+  String buildName,
+  String path,
+  String layer,
+  String component,
+  Xfo xfo,
+  Boolean visibility,
+  Color color,
+  String shapeHash,
+  Xfo xfoAnimation[String],
+  Float32 floatAnimation[String]
+) {
+  this.name = name;
+  this.buildName = buildName;
+  this.path = path;
+  this.layer = layer;
+  this.component = component;
+  this.visibility = visibility;
+  this.color = color;
+  this.shapeHash = shapeHash;
+
+  // xfo animation
+  Xfo localXfo = xfo;
+  localXfo = xfoAnimation.get(this.path, localXfo);
+
+  // component wise float animation
+  localXfo.tr.x = floatAnimation.get(this.path+'.tr.x', localXfo.tr.x);
+  localXfo.tr.y = floatAnimation.get(this.path+'.tr.y', localXfo.tr.y);
+  localXfo.tr.z = floatAnimation.get(this.path+'.tr.z', localXfo.tr.z);
+  localXfo.ori.v.x = floatAnimation.get(this.path+'.ori.v.x', localXfo.ori.v.x);
+  localXfo.ori.v.y = floatAnimation.get(this.path+'.ori.v.y', localXfo.ori.v.y);
+  localXfo.ori.v.z = floatAnimation.get(this.path+'.ori.v.z', localXfo.ori.v.z);
+  localXfo.ori.w = floatAnimation.get(this.path+'.ori.w', localXfo.ori.w);
+  localXfo.sc.x = floatAnimation.get(this.path+'.sc.x', localXfo.sc.x);
+  localXfo.sc.y = floatAnimation.get(this.path+'.sc.y', localXfo.sc.y);
+  localXfo.sc.z = floatAnimation.get(this.path+'.sc.z', localXfo.sc.z);
+
+  // also do euler values, just in case
+  if(floatAnimation.has(this.path+'.rot.x') || 
+    floatAnimation.has(this.path+'.rot.y') || 
+    floatAnimation.has(this.path+'.rot.z')) {
+    Vec3 angles = localXfo.ori.toEulerAngles();
+    angles.x = floatAnimation.get(this.path+'.rot.x', angles.x);
+    angles.y = floatAnimation.get(this.path+'.rot.y', angles.y);
+    angles.z = floatAnimation.get(this.path+'.rot.z', angles.z);
+    localXfo.ori.setFromEulerAngles(angles);
+  }
+
+  this.local = localXfo.toMat44();
+}
+
+/// \dfgPresetFolder DebugDrawing
+function KrakenControl.drawIntoLinesObjectForControl(Xfo xfo, KrakenCurveDict shapes, io Lines lines) {
+  if(!this.visibility)
+    return;
+  KrakenCurveData curve = shapes.curves.get(this.shapeHash, KrakenCurveData());
+  if(curve.indices.size() == 0)
+    return;
+
+  Size firstIndex = lines.pointCount();
+  Size iidx = lines.indices.size();
+  Size vidx = firstIndex;
+
+  lines.indices.resize(iidx + curve.indices.size());
+  for(Size i=0;i<curve.indices.size();i++)
+    lines.indices[iidx++] = curve.indices[i] + firstIndex;
+
+  lines.addPoints(curve.positions.size());
+  GeometryAttributes attributes = lines.getAttributes();
+  Vec3Attribute positions = attributes.getAttribute('positions');
+  for(Size i=0;i<curve.positions.size();i++)
+    positions.values[vidx++] = xfo.transformVector(curve.positions[i]);
+
+  positions.incrementVersion();
+  lines.incrementVersion();
+
+  KrakenObject3D_DrawIntoLines_VertexColors(this, firstIndex, lines);
+}

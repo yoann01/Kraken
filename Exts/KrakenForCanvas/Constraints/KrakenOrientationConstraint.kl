@@ -1,0 +1,67 @@
+require Kraken;
+
+struct KrakenOrientationConstraint : KrakenConstraint {
+};
+
+/// \dfgPresetFolder Constraints
+function KrakenOrientationConstraint(
+  Mat44 offset,
+) {
+  this.offset = offset;
+}
+
+/// \dfgPresetFolder Constraints
+function KrakenOrientationConstraint.addConstrainer!(
+  Mat44 constrainer
+) {
+  this.constrainers.push(constrainer);
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 KrakenOrientationConstraint.compute?(
+  Mat44 m
+) {
+  Xfo result = m;
+
+  result.ori = Quat(Vec3(0.0, 0.0, 0.0), 0.0);
+
+  for(Size i=0;i<this.constrainers.size();i++) {
+    Xfo constrainer(this.constrainers[i]);
+    result.ori = result.ori.add(constrainer.ori);
+  }
+
+  result.ori.setUnit();
+
+  return result.toMat44() * this.offset;
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 computeKrakenOrientationConstraint(Mat44 offset, Mat44 constrainer, Mat44 constrainee) {
+  KrakenOrientationConstraint constraint(offset);
+  constraint.addConstrainer(constrainer);
+  return constraint.compute(constrainee);
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 KrakenOrientationConstraint.computeOffset?(
+  Mat44 constrainee
+) {
+
+  KrakenOrientationConstraint tmpConstraint(Mat44());
+  tmpConstraint.constrainers = this.constrainers;
+
+  Mat44 global = tmpConstraint.compute(constrainee);
+  Xfo result = global.inverse() * constrainee;
+  result.tr = Vec3(0.0);
+  result.sc = Vec3(1.0);
+
+  return result.toMat44();
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 KrakenOrientationConstraint.computeOffsetSimple!(Mat44 constrainee, Mat44 constrainer) {
+  this.offset = Mat44();
+  this.constrainers.resize(1);
+  this.constrainers[0] = constrainer;
+  return this.computeOffset(constrainee);
+}

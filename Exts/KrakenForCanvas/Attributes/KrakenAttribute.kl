@@ -1,0 +1,9 @@
+require Math;
+
+struct KrakenAttribute : KrakenItem{
+  String name;
+  String path;
+  Boolean keyable;
+  Boolean animatable;
+};
+

@@ -1,0 +1,29 @@
+{
+  "version": "1.2.0",
+  "code": [
+    "Drawing/DrawingUtils.kl",
+    "Solvers/Math.kl",
+    "Solvers/KrakenSolverArg.kl",
+    "Solvers/KrakenSolver.kl",
+    "Solvers/RigScaleSolver.kl",
+    "Solvers/DirectionConstraintSolver.kl",
+    "Solvers/PoseConstraintSolver.kl",
+    "Solvers/MultiPoseConstraintSolver.kl",
+    "Solvers/BezierSpineSolver.kl",
+    "Solvers/TwoBoneIKSolver.kl",
+    "Solvers/TwoBoneStretchyIKSolver.kl",
+    "Solvers/NBoneIKSolver.kl",
+    "Solvers/TentacleSolver.kl",
+    "Solvers/DynamicChainSolver.kl",
+    "Solvers/Biped/BipedFootSolver.kl",
+    "Solvers/Biped/BipedFootPivotSolver.kl",
+    "Solvers/Biped/NeckGuideSolver.kl",
+    "Solvers/TwistSolver.kl",
+    "PersistenceHelpers.kl"
+  ],
+  "autoNamespace": true,
+  "dfgPresets": {
+    "dir": "DFG",
+    "presetPath": "Kraken.Exts"
+  }
+}

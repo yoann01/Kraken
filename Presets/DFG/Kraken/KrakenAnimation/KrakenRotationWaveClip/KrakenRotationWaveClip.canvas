@@ -1,0 +1,33 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  result: KrakenRotationWaveClip\n"
+    },
+  "title" : "KrakenRotationWaveClip",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "result",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "KrakenRotationWaveClip"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "A824FB6D68B6DEFA3729DB2C318F6FD9",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  result = KrakenRotationWaveClip();
+}
+"
+  }

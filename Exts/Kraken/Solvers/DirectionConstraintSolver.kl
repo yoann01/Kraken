@@ -1,0 +1,77 @@
+require InlineDrawing;
+require Geometry;
+
+object DirectionConstraintSolver : KrakenSolver {
+};
+
+// Default Constructor
+/// \dfgPresetTitle DirectionConstraintSolver_Constructor
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\DirectionConstraintSolver
+function DirectionConstraintSolver()
+{
+
+}
+
+// Return Arguments for Kraken
+/// \dfgPresetOmit
+function KrakenSolverArg[] DirectionConstraintSolver.getArguments(){
+  KrakenSolverArg args[] = this.parent.getArguments();
+  args.push(KrakenSolverArg('position', 'In', 'Mat44'));
+  args.push(KrakenSolverArg('upVector', 'In', 'Mat44'));
+  args.push(KrakenSolverArg('atVector', 'In', 'Mat44'));
+  args.push(KrakenSolverArg('constrainee', 'Out', 'Mat44'));
+  return args;
+}
+
+// Solve
+/// \dfgPresetTitle DirectionConstraintSolver_Solve
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\DirectionConstraintSolver
+function DirectionConstraintSolver.solve!
+(
+  in Boolean drawDebug,
+  in Scalar rigScale,
+  in Mat44 position,
+  in Mat44 upVector,
+  in Mat44 atVector,
+  io Mat44 constrainee
+  )
+{
+  Vec3 toAtVector = atVector.translation().subtract(position.translation()).unit();
+  Vec3 toUpVector = upVector.translation().subtract(position.translation()).unit();
+  // Vec3 normal = toAtVector.cross(toUpVector).unit();
+  // Vec3 yAxis = normal.cross(toAtVector).unit();
+
+  Quat xAlignOri;
+  xAlignOri.setFromAxisAndAngle(Vec3(0, 1, 0), Math_degToRad(-90));
+
+  Xfo outXfo;
+  outXfo = position.translation();
+  outXfo.ori.setFromDirectionAndUpvector(toAtVector, toUpVector);
+
+  outXfo.ori *= xAlignOri;
+
+  constrainee = outXfo.toMat44();
+
+  Vec3 debugPositions[];
+  debugPositions.resize(2);
+
+  debugPositions[0] = position.translation();
+  debugPositions[1] = atVector.translation();
+
+  // Set debugging visibility.
+  this.setDebug(this.drawDebug);
+  if(this.drawDebug){
+    if(!this.handle)
+      this.handle = DrawingHandle();
+
+    Color lineColor(1.0, 1.0, 0);
+    drawLineStrip(this.handle.rootTransform, 'DirConstraintLine', debugPositions, lineColor);
+
+  }
+}

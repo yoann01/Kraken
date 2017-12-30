@@ -1,0 +1,33 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  result: KrakenStaticClip\n"
+    },
+  "title" : "KrakenStaticClip",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "result",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "KrakenStaticClip"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "7F433535354A63134659FCC20583EAE5",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  result = KrakenStaticClip();
+}
+"
+  }

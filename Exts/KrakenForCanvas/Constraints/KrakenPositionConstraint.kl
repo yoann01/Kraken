@@ -1,0 +1,66 @@
+require Kraken;
+
+struct KrakenPositionConstraint : KrakenConstraint {
+};
+
+/// \dfgPresetFolder Constraints
+function KrakenPositionConstraint(
+  Mat44 offset,
+) {
+  this.offset = offset;
+}
+
+/// \dfgPresetFolder Constraints
+function KrakenPositionConstraint.addConstrainer!(
+  Mat44 constrainer
+) {
+  this.constrainers.push(constrainer);
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 KrakenPositionConstraint.compute?(
+  Mat44 m
+) {
+  Mat44 result = m;
+  Vec3 tr;
+
+  for(Size i=0;i<this.constrainers.size();i++) {
+    tr += this.constrainers[i].translation();
+  }
+
+  tr *= 1.0 / Float32(this.constrainers.size());
+  result.setTranslation(tr);
+
+  return result * this.offset;
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 computeKrakenPositionConstraint(Mat44 offset, Mat44 constrainer, Mat44 constrainee) {
+  KrakenPositionConstraint constraint(offset);
+  constraint.addConstrainer(constrainer);
+  return constraint.compute(constrainee);
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 KrakenPositionConstraint.computeOffset?(
+  Mat44 constrainee
+) {
+
+  KrakenPositionConstraint tmpConstraint(Mat44());
+  tmpConstraint.constrainers = this.constrainers;
+
+  Mat44 global = tmpConstraint.compute(constrainee);
+  Mat44 result = global.inverse() * constrainee;
+  Vec3 tr = result.translation();
+  result = Mat44();
+  result.setTranslation(tr);
+  return result;
+}
+
+/// \dfgPresetFolder Constraints
+function Mat44 KrakenPositionConstraint.computeOffsetSimple!(Mat44 constrainee, Mat44 constrainer) {
+  this.offset = Mat44();
+  this.constrainers.resize(1);
+  this.constrainers[0] = constrainer;
+  return this.computeOffset(constrainee);
+}

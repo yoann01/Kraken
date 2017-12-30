@@ -1,0 +1,50 @@
+require InlineDrawing;
+require Geometry;
+
+
+object RigScaleSolver : KrakenSolver {
+};
+
+// Default Constructor
+/// \dfgPresetTitle RigScaleSolver_Constructor
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\RigScaleSolver
+function RigScaleSolver()
+{
+  this.defaultValues["target"] = Mat44();
+}
+
+
+// Return Arguments for Kraken
+/// \dfgPresetOmit
+function KrakenSolverArg[] RigScaleSolver.getArguments(){
+  KrakenSolverArg args[] = this.parent.getArguments();
+  args.push(KrakenSolverArg('target', 'Out', 'Mat44'));
+  return args;
+}
+
+
+// Solve
+/// \dfgPresetTitle RigScaleSolver_Solve
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\RigScaleSolver
+function RigScaleSolver.solve!
+(
+  in Boolean drawDebug,
+  in Scalar rigScale,
+  io Mat44 target
+  )
+{
+  Xfo scaleXfo;
+  scaleXfo.sc = Vec3(rigScale, rigScale, rigScale);
+  target = scaleXfo.toMat44();
+
+  // Set debugging visibility.
+  this.setDebug(this.drawDebug);
+  if(this.drawDebug){
+  }
+}

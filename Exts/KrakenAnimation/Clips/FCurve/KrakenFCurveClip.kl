@@ -1,0 +1,103 @@
+require Math;
+require AnimX;
+
+object KrakenFCurveClip : KrakenClip {
+  String names[];
+  UInt32 nameToId[String];
+  AnimX::AnimClip clips[];
+  KrakenClipLookup lookup;
+};
+
+function KrakenFCurveClip() {
+  this.lookup = null;
+}
+
+/// \dfgPresetCombo interpolation ("Constant", "Linear", "Bezier")
+/// \dfgPresetDefault interpolation 2
+function AnimX::AnimClip KrakenFCurveClip.createChannel!(String name, UInt32 interpolation) {
+  this.lookup = null;
+
+  UInt32 id = this.nameToId.get(name, this.clips.size());
+  if(id == this.clips.size()) {
+    this.nameToId[name] = this.clips.size();
+    this.names.push(name);
+
+    AnimX::AnimClip clip(name);
+    this.clips.push(clip);
+
+    clip.addCurve('.tr.x', true, Color(1.0, 0.0, 0.0));
+    clip.addCurve('.tr.y', true, Color(0.0, 1.0, 0.0));
+    clip.addCurve('.tr.z', true, Color(0.0, 0.0, 1.0));
+    clip.addCurve('.euler.x', true, Color(1.0, 0.0, 0.0));
+    clip.addCurve('.euler.y', true, Color(0.0, 1.0, 0.0));
+    clip.addCurve('.euler.z', true, Color(0.0, 0.0, 1.0));
+    return clip;
+  }
+  return this.clips[id];
+}
+
+UInt32 KrakenFCurveClip.getChannelCount() {
+  return this.clips.size();
+}
+
+String KrakenFCurveClip.getChannelName(UInt32 id) {
+  return this.names[id];
+}
+
+UInt32 KrakenFCurveClip.getChannelType(UInt32 id) {
+  return KrakenClipChannel_Xfo;
+}
+
+/// \dfgPresetOmit
+AnimX::AnimCurve[] KrakenFCurveClip.getChannelCurves(String name) {
+  UInt32 id = this.nameToId.get(name, this.clips.size());
+  if(id != this.clips.size())
+    return this.clips[id].allCurves();
+  AnimX::AnimCurve result[];
+  return result;
+}
+
+Float32 KrakenFCurveClip.evaluateFloat32!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context) {
+  return 0.0;
+}
+
+Xfo KrakenFCurveClip.evaluateXfo!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context) {
+  Xfo xfo;
+  this.clips[id].evaluateXfo('', context.time, CurveRotationInterpolationMethod_Slerp, xfo);
+  return xfo;
+}
+
+function KrakenFCurveClip.apply(io Ref<KrakenKLRig> rig, KrakenClipContext context, Float32 factor) {
+  KrakenFCurveClip clip = this;
+  if(clip.lookup == null)
+    clip.lookup = KrakenClipLookup(rig, clip);
+  clip.lookup.applyClip(rig, clip, context, factor);
+}
+
+function KrakenFCurveClip.saveToJson!(io FTL_JSONObjectEncoder encoder) {
+  
+  FTL_JSONArrayEncoder valueArrayEncoder = encoder.setArray('clips');
+  for(Size i=0;i<this.clips.size();i++)
+  {
+    FTL_JSONObjectEncoder valueEncoder = valueArrayEncoder.pushObject();
+    this.clips[i].convertToJSON(valueEncoder);
+  }
+}
+
+function KrakenFCurveClip.loadFromJson!(io FTL_JSONObject decoder) {
+  this.names.resize(0);
+  this.nameToId.clear();
+  this.clips.resize(0);
+
+  FTL_JSONArray valueArrayDecoder = decoder.getArray('clips');
+  for(Size i=0;i<valueArrayDecoder.size();i++) {
+    FTL_JSONObject valueDecoder = valueArrayDecoder.getObject(i);
+
+    AnimX::AnimClip clip();
+    clip.convertFromJSON(valueDecoder);
+
+    this.nameToId[clip.getName()] = this.clips.size();
+    this.names.push(clip.getName());
+    this.clips.push(clip);
+  }
+}

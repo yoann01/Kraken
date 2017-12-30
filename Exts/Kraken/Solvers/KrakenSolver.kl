@@ -1,0 +1,43 @@
+require InlineDrawing;
+
+/// \dfgPresetOmit
+interface IKrakenSolver {
+  KrakenSolverArg[] getArguments();
+};
+
+/// \dfgPresetOmit
+object KrakenSolver : IKrakenSolver {
+
+  UInt32 uniqueId;
+  RTVal defaultValues[String];
+
+  Boolean drawDebug;
+  DrawingHandle handle;
+};
+
+// Default Constructor
+/// \dfgPresetOmit
+inline KrakenSolver() {
+
+  this.defaultValues["drawDebug"] = false;
+  this.defaultValues["rigScale"] = 1.0;
+
+  this.drawDebug = this.defaultValues["drawDebug"];
+}
+
+// Return Arguments for Kraken
+/// \dfgPresetOmit
+function KrakenSolverArg[] KrakenSolver.getArguments(){
+  KrakenSolverArg args[];
+  args.push(KrakenSolverArg('drawDebug', 'In', 'Boolean'));
+  args.push(KrakenSolverArg('rigScale', 'In', 'Scalar'));
+  return args;
+}
+
+/// \dfgPresetOmit
+function KrakenSolver.setDebug!(in Boolean active) {
+  this.drawDebug = active;
+  if(this.handle)
+    this.handle.setActive(active);
+}
+

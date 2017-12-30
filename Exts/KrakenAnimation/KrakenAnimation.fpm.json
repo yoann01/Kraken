@@ -1,0 +1,17 @@
+{
+  "code": [
+    "Interfaces/KrakenClipContext.kl",
+    "Interfaces/KrakenClip.kl",
+    "Interfaces/KrakenKLRig.kl",
+    "Interfaces/KrakenClipLookup.kl",
+    "Interfaces/KrakenKLRigPoseAdaptor.kl",
+    "Serialization/KrakenClipIO.kl",
+
+    "Clips/Static/KrakenStaticClip.kl",
+    "Clips/FCurve/KrakenFCurveClip.kl",
+    "Clips/Alembic/KrakenAbcClip.kl",
+    "Clips/Containers/KrakenClipStack.kl",
+    "Clips/Procedural/KrakenRotationWaveClip.kl"
+  ],
+  "autoNamespace": true
+}

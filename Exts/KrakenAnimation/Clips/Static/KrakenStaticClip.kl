@@ -1,0 +1,127 @@
+require Math;
+
+object KrakenStaticClip : KrakenClip {
+  String names[];
+  UInt32 nameToId[String];
+  UInt32 types[];
+  Xfo values[];
+
+  KrakenClipLookup lookup;
+};
+
+function KrakenStaticClip() {
+  this.lookup = null;
+}
+
+function KrakenStaticClip.setFloat32!(String name, Float32 value) {
+  UInt32 id = this.nameToId.get(name, this.values.size());
+  if(id == this.values.size()) {
+    this.nameToId[name] = this.values.size();
+    this.names.push(name);
+    this.values.push(Xfo(Vec3(value, 0.0, 0.0)));
+    this.types.push(KrakenClipChannel_Float32);
+  } else {
+    this.values[id].tr.x = value;
+    this.types[id] = KrakenClipChannel_Float32;
+  }
+  this.lookup = null;
+}
+
+function KrakenStaticClip.setXfo!(String name, Xfo value) {
+  UInt32 id = this.nameToId.get(name, this.values.size());
+  if(id == this.values.size()) {
+    this.nameToId[name] = this.values.size();
+    this.names.push(name);
+    this.values.push(value);
+    this.types.push(KrakenClipChannel_Xfo);
+  } else {
+    this.values[id] = value;
+    this.types[id] = KrakenClipChannel_Xfo;
+  }
+  this.lookup = null;
+}
+
+UInt32 KrakenStaticClip.getChannelCount() {
+  return this.values.size();
+}
+
+String KrakenStaticClip.getChannelName(UInt32 id) {
+  return this.names[id];
+}
+
+UInt32 KrakenStaticClip.getChannelType(UInt32 id) {
+  return this.types[id];
+}
+
+Float32 KrakenStaticClip.evaluateFloat32!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context) {
+  return this.values[id].tr.x;
+}
+
+Xfo KrakenStaticClip.evaluateXfo!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context) {
+  return this.values[id];
+}
+
+Xfo KrakenStaticClip.evaluateXfo!(String name) {
+  UInt32 id = this.nameToId.get(name, this.values.size());
+  return this.values[id];
+}
+
+function KrakenStaticClip.apply(io Ref<KrakenKLRig> rig, KrakenClipContext context, Float32 factor) {
+  KrakenStaticClip clip = this;
+  if(clip.lookup == null)
+    clip.lookup = KrakenClipLookup(rig, clip);
+  clip.lookup.applyClip(rig, clip, context, factor);
+}
+
+function KrakenStaticClip.saveToJson!(io FTL_JSONObjectEncoder encoder) {
+  FTL_JSONArrayEncoder valueArrayEncoder = encoder.setArray('values');
+  for(Size i=0;i<this.types.size();i++) {
+    FTL_JSONObjectEncoder valueEncoder = valueArrayEncoder.pushObject();
+    valueEncoder.setString('name', this.names[i]);
+    valueEncoder.setSInt32('type', this.types[i]);
+    if(this.types[i] == KrakenClipChannel_Float32) {
+      valueEncoder.setFloat64('value', this.values[i].tr.x);
+    } else if(this.types[i] == KrakenClipChannel_Xfo) {
+      valueEncoder.setFloat64('tr.x', this.values[i].tr.x);
+      valueEncoder.setFloat64('tr.y', this.values[i].tr.y);
+      valueEncoder.setFloat64('tr.z', this.values[i].tr.z);
+      valueEncoder.setFloat64('ori.v.x', this.values[i].ori.v.x);
+      valueEncoder.setFloat64('ori.v.y', this.values[i].ori.v.y);
+      valueEncoder.setFloat64('ori.v.z', this.values[i].ori.v.z);
+      valueEncoder.setFloat64('ori.w', this.values[i].ori.w);
+      valueEncoder.setFloat64('sc.x', this.values[i].sc.x);
+      valueEncoder.setFloat64('sc.y', this.values[i].sc.y);
+      valueEncoder.setFloat64('sc.z', this.values[i].sc.z);
+    }
+  }
+}
+
+function KrakenStaticClip.loadFromJson!(io FTL_JSONObject decoder) {
+  this.names.resize(0);
+  this.nameToId.clear();
+  this.types.resize(0);
+  this.values.resize(0);
+
+  FTL_JSONArray valueArrayDecoder = decoder.getArray('values');
+  for(Size i=0;i<valueArrayDecoder.size();i++) {
+    FTL_JSONObject valueDecoder = valueArrayDecoder.getObject(i);
+    String name = valueDecoder.getString('name');
+    Integer type = valueDecoder.getSInt32('type');
+    if(type == KrakenClipChannel_Float32)
+      this.setFloat32(name, Float32(valueDecoder.getFloat64('value')));
+    else {
+      Xfo xfo;
+      xfo.tr.x = Float32(valueDecoder.getFloat64('tr.x'));
+      xfo.tr.y = Float32(valueDecoder.getFloat64('tr.y'));
+      xfo.tr.z = Float32(valueDecoder.getFloat64('tr.z'));
+      xfo.ori.v.x = Float32(valueDecoder.getFloat64('ori.v.x'));
+      xfo.ori.v.y = Float32(valueDecoder.getFloat64('ori.v.y'));
+      xfo.ori.v.z = Float32(valueDecoder.getFloat64('ori.v.z'));
+      xfo.ori.w = Float32(valueDecoder.getFloat64('ori.w'));
+      xfo.sc.x = Float32(valueDecoder.getFloat64('sc.x'));
+      xfo.sc.y = Float32(valueDecoder.getFloat64('sc.y'));
+      xfo.sc.z = Float32(valueDecoder.getFloat64('sc.z'));
+      this.setXfo(name, xfo);
+    }
+  }
+}

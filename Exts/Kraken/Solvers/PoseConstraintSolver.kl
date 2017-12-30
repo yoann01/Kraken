@@ -1,0 +1,52 @@
+require InlineDrawing;
+require Geometry;
+
+object PoseConstraintSolver : KrakenSolver {
+};
+
+// Default Constructor
+/// \dfgPresetTitle PoseConstraintSolver_Constructor
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\PoseConstraintSolver
+function PoseConstraintSolver()
+{
+
+}
+
+// Return Arguments for Kraken
+/// \dfgPresetOmit
+function KrakenSolverArg[] PoseConstraintSolver.getArguments(){
+  KrakenSolverArg args[] = this.parent.getArguments();
+  args.push(KrakenSolverArg('constrainer', 'In', 'Mat44'));
+  args.push(KrakenSolverArg('constrainee', 'Out', 'Mat44'));
+  return args;
+}
+
+
+// Solve
+/// \dfgPresetTitle PoseConstraintSolver_Solve
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Solvers\PoseConstraintSolver
+function PoseConstraintSolver.solve!
+(
+  in Boolean drawDebug,
+  in Scalar rigScale,
+  in Mat44 constrainer,
+  io Mat44 constrainee
+  )
+{
+  constrainee = constrainer;
+
+  // Set debugging visibility.
+  this.setDebug(this.drawDebug);
+  if(this.drawDebug){
+    if(!this.handle)
+      this.handle = DrawingHandle();
+    Color boneColor = Color(0.0, 0.0, 1.0);
+    etDrawBone(this.handle.rootTransform, 'singleBone', constrainer, 1.0, 0.25, boneColor);
+  }
+}

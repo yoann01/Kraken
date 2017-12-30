@@ -1,0 +1,314 @@
+
+require Math;
+
+/// \dfgPresetOmit
+function Scalar sq(Scalar v) {
+  return v * v;
+}
+
+/// \dfgPresetTitle SolveNBoneIK
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Xfo[] solveNBoneIK(
+  in Xfo basePose[],
+  in Vec3 goalPosition,
+  in Scalar rigScale
+) {
+
+  Scalar boneLengths[];
+  Vec3 boneVectors[];
+  Xfo ikpose[];
+  Scalar remainingChainLength = 0;
+  boneLengths.resize(basePose.size());
+  boneVectors.resize(basePose.size());
+  ikpose.resize(basePose.size());
+  for (Integer i = 0; i < basePose.size()-1; i++) {
+    ikpose[i] = basePose[i];
+    // Note: Scaling of bones is currently not supported.
+    boneVectors[i] = basePose[i].inverse().transformVector(basePose[i+1].tr);
+    boneLengths[i] = boneVectors[i].length() * rigScale;
+    remainingChainLength += abs(boneLengths[i] /* basePose[i].sc.x*/);
+  }
+
+  Vec3 chainRootPos = basePose[0].tr;
+  Integer lastBoneIndex = basePose.size()-1;
+  Vec3 fkChainTip = basePose[lastBoneIndex].tr;
+
+  // Apply the soft limit to the distance to the IK goal
+  Vec3 vecToIkGoal = goalPosition - chainRootPos;
+  Scalar distToIkGoal = vecToIkGoal.length();
+  Quat chainOffsetRotation;
+
+  for (Integer i = 0; i < basePose.size()-1; i++) {
+    Vec3 vecToFkChainTip;
+    Xfo boneXfo;
+    Integer boneIndex = i;
+    boneXfo = basePose[i];
+    if (i == 0) {
+      vecToFkChainTip = fkChainTip - boneXfo.tr;
+    }
+    else {
+      // Transform the bone position by the overall chain offset.
+      vecToFkChainTip = fkChainTip - (chainRootPos + (chainOffsetRotation.rotateVector((boneXfo.tr - chainRootPos))));
+
+      // Calculate a new pose position based on the parent bones new orientation
+      boneXfo.tr = ikpose[i-1].transformVector(boneVectors[i-1]);
+    }
+    Scalar distToFkChainTip = vecToFkChainTip.length();
+    vecToFkChainTip *= 1.0 / distToFkChainTip;
+
+    vecToIkGoal = goalPosition - boneXfo.tr;
+    distToIkGoal = vecToIkGoal.length();
+    vecToIkGoal *= 1.0 / distToIkGoal; // normalize the vector
+    Scalar boneLength = abs(boneLengths[i] /* boneXfo.sc.x*/);
+
+    if (i == 0) {
+      // For the first bone calculate and store the overall chain offset towards the ik target
+      chainOffsetRotation.setFrom2Vectors(vecToFkChainTip, vecToIkGoal);
+
+      fkChainTip = boneXfo.tr + (vecToIkGoal * distToFkChainTip);
+      boneXfo.ori = chainOffsetRotation * boneXfo.ori;
+    }
+    else {
+      // Apply the chain offset, and apply any incremental correction.
+      // This additional correction is required due to a new bone position based on the new parent orientation
+      Quat boneOffsetRotation;
+      boneOffsetRotation.setFrom2Vectors(vecToFkChainTip, vecToIkGoal);
+      boneXfo.ori = boneOffsetRotation * chainOffsetRotation * boneXfo.ori;
+    }
+
+    // Based on the bone index, select an appropriate method to solve
+    if (i <= (basePose.size() - 3)) {
+      // Remove the current bones length from the chain.
+      remainingChainLength -= boneLength;
+      Vec3 boneLengthVector;
+      //if(boneLengths[i] < 0.0 /* || boneXfo.sc.x < 0.0*/)
+      //  boneLengthVector = boneXfo.ori.rotateVector(Vec3(-1.0, 0.0, 0.0));
+      //else
+        boneLengthVector = boneXfo.ori.rotateVector(boneVectors[i].unit());
+
+      // this is the current angle of the bone.
+      Scalar fkBoneAngle = acos(Math_clamp(boneLengthVector.dot(vecToIkGoal), -1.0, 1.0));
+
+      if(fkBoneAngle < 0.0001){
+        // If the bone is already pointing directly at the target, we can't work with it.
+        // in debug mode, report and error...
+        continue;
+      }
+
+      Vec3 bendAxis = vecToIkGoal.cross(boneLengthVector);
+      bendAxis.setUnit();
+      Scalar ikBoneAngle;
+
+      if (i == (basePose.size() - 3)) {
+        // Use trigonometry to determine the ikBoneAngle
+        // Law of cosines. a = BoneLength; b = Child BoneLength; c = Distance to the Ik Goal;
+        ikBoneAngle = acos(Math_clamp((sq(boneLength) + sq(distToIkGoal) - sq(remainingChainLength)) / (2.0 * boneLength * distToIkGoal), - 1.0, 1.0));
+      }
+      else {
+        Scalar maxFkBoneAngle, maxIkBoneAngle;
+
+        // distance from the bone tip to the ik gloal
+        if (distToFkChainTip > remainingChainLength) {
+          // Using the law of cosines, calculate the maximum angle of this bone using the fk Chain tip
+          maxFkBoneAngle = acos(Math_clamp((sq(boneLength) + sq(distToFkChainTip) - sq(remainingChainLength)) / (2.0 * boneLength * distToFkChainTip), - 1.0, 1.0));
+        }
+        else {
+          // Add on the remaining chain length as radians.
+          maxFkBoneAngle = acos(Math_clamp((boneLength * 0.5) / remainingChainLength, 0.0, 1.0));
+          maxFkBoneAngle += (remainingChainLength - distToFkChainTip) / boneLength;
+        }
+
+        // distance from the bone tip to the ik gloal
+        if (distToIkGoal > remainingChainLength) {
+          // Using the law of cosines, calculate the maximum angle of this bone using the fk Chain tip
+          maxIkBoneAngle = acos(Math_clamp((sq(boneLength) + sq(distToIkGoal) - sq(remainingChainLength)) / (2.0 * boneLength * distToIkGoal), - 1.0, 1.0));
+        }
+        else {
+          // Add on the remaining chain length as radians.
+          maxIkBoneAngle = acos(Math_clamp((boneLength * 0.5) / remainingChainLength, 0.0, 1.0));
+          maxIkBoneAngle += (remainingChainLength - distToIkGoal) / boneLength;
+        }
+
+        ikBoneAngle = maxIkBoneAngle * (fkBoneAngle / maxFkBoneAngle);
+      }
+
+      // Subtract off the current angle the bone has with the vecToIkGoal to keep the delta
+      Scalar deltaBoneAngle = (ikBoneAngle - fkBoneAngle);
+
+      // Apply the rotation to the current bones
+      Quat offset;
+      offset.setFromAxisAndAngle(bendAxis, deltaBoneAngle);
+      boneXfo.ori = offset * boneXfo.ori;
+
+    }
+
+    ikpose[boneIndex] = boneXfo;
+  }
+  ikpose[lastBoneIndex].tr = ikpose[lastBoneIndex-1].transformVector(boneVectors[lastBoneIndex-1]);
+  return ikpose;
+}
+
+
+
+// Solve the chain after aligning it with the goal and up-vector.
+/// \dfgPresetTitle SolveNBoneIKWithUpVector
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Xfo[] solveNBoneIKWithUpVector(
+  in Xfo basePose[],
+  in Vec3 goalPosition,
+  in Vec3 upVPosition,
+  in Vec3 upVector,
+  in Scalar rigScale
+) {
+  Vec3 chainRootPos = basePose[0].tr;
+  Integer lastBoneIndex = basePose.size()-1;
+  Vec3 fkChainTip = basePose[lastBoneIndex].tr;
+  Vec3 vecToFkChainTip = (fkChainTip - chainRootPos).unit();
+  Vec3 vecToIkGoal = (goalPosition - chainRootPos).unit();
+
+  Quat chainOffsetRotation;
+  chainOffsetRotation.setFrom2Vectors(vecToFkChainTip, vecToIkGoal);
+
+  // Compute the current upvector of the chain using the first joints xfo.
+  Vec3 fkChainUp = (chainOffsetRotation * basePose[0].ori).rotateVector(upVector);
+  Vec3 vecToUpVPos = upVPosition - chainRootPos;
+
+  // project the vectors onto the plane defined by the root and root to goal vector
+  vecToUpVPos = (vecToUpVPos - (vecToUpVPos.dot(vecToIkGoal) * vecToIkGoal)).unit();
+  fkChainUp = (fkChainUp - (fkChainUp.dot(vecToIkGoal) * vecToIkGoal)).unit();
+
+
+  Scalar angle = fkChainUp.angleTo(vecToUpVPos);
+  if( fkChainUp.cross(vecToUpVPos).dot(vecToIkGoal) < 0.0 )
+    angle = -angle;
+
+  // Apply the upvector alignment to the chain rotation.
+  Quat upVectorOffset;
+  upVectorOffset.setFromAxisAndAngle(vecToIkGoal, angle);
+  chainOffsetRotation = upVectorOffset * chainOffsetRotation;
+
+  // compute a new aligned chain that includes the re-orientation using the upvector.
+  Xfo alignedPose[];
+  alignedPose.resize(basePose.size());
+  for (Integer i = 0; i < basePose.size(); i++) {
+    alignedPose[i] = basePose[i];
+    alignedPose[i].ori = chainOffsetRotation * basePose[i].ori;
+    if(i==0)
+      alignedPose[i].tr = chainRootPos;
+    else
+      alignedPose[i].tr = alignedPose[i-1].transformVector(basePose[i-1].inverse().transformVector(basePose[i].tr));
+  }
+
+  // Now solve the chain like normal.
+  return solveNBoneIK(alignedPose, goalPosition, rigScale);
+}
+
+
+/// methods for aligning Xforms intuitively
+
+// 'normalizes' Integer so that it returns 1 or -1 respectively if it matches the Input Value or it's negative value.
+/// \dfgPresetOmit
+function SInt8 SInt8_normalize(SInt8 this, SInt8 v) {
+  if (this == v) {
+    return SInt8(1);
+  } else if (this == -v) {
+    return SInt8(-1);
+  } else {
+    return SInt8(0);
+  }
+}
+
+// translates three integer values into a Mat33 for further alignment
+//  1 =  X
+// -1 = -X
+//  2 =  Y
+// -2 = -Y
+//  3 =  Z
+// -3 = -Z
+// any other values that should should be ignored, currently are not (<3; >3; 0)
+/// \dfgPresetTitle QuatGetAxis
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Vec3 Quat_getAxis(in Quat this, in UInt32 axisIndex)
+{
+  switch (axisIndex)
+  {
+    case 0:
+      return this.getXaxis();
+    case 1:
+      return this.getYaxis();
+    case 2:
+      return this.getZaxis();
+    case 3:
+      return this.getXaxis().negate();
+    case 4:
+      return this.getYaxis().negate();
+    case 5:
+      return this.getZaxis().negate();
+  }
+  return this.getXaxis();
+}
+
+
+
+/// \dfgPresetTitle Mat33FromXYZ
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Mat33 Mat33_fromXYZ(SInt8 x, SInt8 y, SInt8 z) {
+  Mat33 this;
+  this.row0 = Vec3(SInt8_normalize(x, 1),SInt8_normalize(x, 2),SInt8_normalize(x, 3));
+  this.row1 = Vec3(SInt8_normalize(y, 1),SInt8_normalize(y, 2),SInt8_normalize(y, 3));
+  this.row2 = Vec3(SInt8_normalize(z, 1),SInt8_normalize(z, 2),SInt8_normalize(z, 3));
+  return this;
+}
+
+/// \dfgPresetTitle Mat44Align
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Mat44 Mat44_align(Mat44 this, SInt8 x, SInt8 y, SInt8 z)
+{
+  Mat33 mat33ori;
+  mat33ori = Mat33_fromXYZ(x, y, z);
+  Mat44 mat44ori;
+  mat44ori.setFromMat33(mat33ori);
+  return this*mat44ori;
+}
+
+/// \dfgPresetTitle XfoAlign
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Xfo Xfo_align(Xfo this, SInt8 x, SInt8 y, SInt8 z)
+{
+  Mat44 m = this.toMat44();
+  m = Mat44_align(m, x, y, z);
+  Xfo result;
+  result.setFromMat44(m);
+  return result;
+}
+
+/// \dfgPresetTitle QuatAlign
+/// \dfgPresetColor Color(49, 60, 61)
+/// \dfgPresetHeaderColor Color(42, 94, 102)
+/// \dfgPresetTextColor Color(168, 229, 240)
+/// \dfgPresetFolder Utils
+function Quat Quat_align(Quat this, SInt8 x, SInt8 y, SInt8 z)
+{
+  Mat33 mat33ori = Mat33_fromXYZ(x, y, z);
+  Quat quatori;
+  quatori.setFromMat33(mat33ori);
+  return this*quatori;
+}

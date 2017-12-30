@@ -1,0 +1,46 @@
+/// \dfgPresetOmit
+object KrakenClipLookup {
+  private SInt32 channelToControl[];
+  private SInt32 channelToScalarAttribute[];
+};
+
+/// \dfgPresetOmit
+function KrakenClipLookup(Ref<KrakenKLRig> rig, Ref<KrakenClip> clip) {
+
+  SInt32 controlToId[String];
+  KrakenControl controls<> = rig.getControls();
+  for(Size i=0;i<controls.size();i++)
+    controlToId[controls[i].name] = i;
+
+  SInt32 scalarToId[String];
+  KrakenScalarAttribute scalarAttributes<> = rig.getScalarAttributes();
+  for(Size i=0;i<scalarAttributes.size();i++)
+    scalarToId[scalarAttributes[i].name] = i;
+
+  this.channelToControl.resize(clip.getChannelCount());
+  this.channelToScalarAttribute.resize(clip.getChannelCount());
+  
+  for(Size i=0;i<clip.getChannelCount();i++) {
+    String name = clip.getChannelName(i);
+    this.channelToControl[i] = controlToId.get(name, -1);
+    this.channelToScalarAttribute[i] = scalarToId.get(name, -1);
+  }
+}
+
+/// \dfgPresetOmit
+function KrakenClipLookup.applyClip(io Ref<KrakenKLRig> rig, Ref<KrakenClip> clipRef, KrakenClipContext context, Float32 factor) {
+  KrakenClip clip = clipRef;
+
+  for(Size i=0;i<this.channelToControl.size();i++) {
+    if(this.channelToControl[i] != -1) {
+      Xfo xfo = rig.getControlLocalMat44(this.channelToControl[i]);
+      xfo = xfo.linearInterpolate(clip.evaluateXfo(i, rig, context), factor);
+      rig.setControlLocalMat44(this.channelToControl[i], xfo.toMat44());
+    }
+    if(this.channelToScalarAttribute[i] != -1) {
+      Float32 value = rig.getScalarAttribute(this.channelToScalarAttribute[i]);
+      value = Math_linearInterpolate(value, clip.evaluateFloat32(i, rig, context), factor);
+      rig.setScalarAttribute(this.channelToScalarAttribute[i], value);
+    }
+  }
+}

@@ -1,0 +1,72 @@
+require FTL;
+require FileIO;
+
+function Boolean KrakenClip_saveToFile(Ref<KrakenClip> clipRef, String filePath) {
+  KrakenClip clip = clipRef;
+  FilePath path = filePath;
+  path = path.expandEnvVars();
+
+  FTL_JSONEncoder encoder;
+  {
+    FTL_JSONObjectEncoder objEncoder = encoder.getObject();
+    {
+      objEncoder.setString('clipType', String(clip.type()));
+      {
+        FTL_JSONObjectEncoder contentEncoder = objEncoder.setObject('content');
+        clip.saveToJson(contentEncoder);
+      }
+    }
+  }
+  encoder.toFile(path.string());
+  return true;
+}
+
+function KrakenClip KrakenClip_getFromTypeName(String typeName) {
+  switch(typeName) {
+    case "KrakenStaticClip":
+      return KrakenStaticClip();
+    case "KrakenFCurveClip":
+      return KrakenFCurveClip();
+    case "KrakenAbcClip":
+      return KrakenAbcClip();
+    case "KrakenClipStack":
+      return KrakenClipStack();
+    case "KrakenRotationWaveClip":
+      return KrakenRotationWaveClip();
+  }
+  return null;
+}
+
+function KrakenClip KrakenClip_loadFromFile(String filePath) {
+  FilePath path = filePath;
+  path = path.expandEnvVars();
+  if(!path.exists()) {
+    report('KrakenClip file '+filePath+' does not exist.');
+    return null;
+  }
+
+  FTL_JSONDecoder decoder = FTL_JSONDecoder_fromFile(path.string());
+  FTL_JSONObject rootDecoder = decoder.decode();
+
+  String clipType = rootDecoder.getString('clipType');
+
+  KrakenClip clip = KrakenClip_getFromTypeName(clipType);
+  if(clip)
+  {
+    FTL_JSONObject contentDecoder = rootDecoder.getObject('content');
+    clip.loadFromJson(contentDecoder);
+  }
+  return clip;
+}
+
+struct KrakenClipHandle
+{
+};
+
+function KrakenClip KrakenClipHandle.loadFromFile(String filePath) {
+  return KrakenClip_loadFromFile(filePath);
+}
+
+function Boolean KrakenClipHandle.saveToFile(Ref<KrakenClip> clipRef, String filePath) {
+  return KrakenClip_saveToFile(clipRef, filePath);
+}

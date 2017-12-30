@@ -1,0 +1,48 @@
+{
+  "objectType" : "Func",
+  "metadata" : {
+    "uiTooltip" : "Supported types:\n  clipRef: Ref<KrakenClip>\n  filePath: String\n  result: Boolean\n"
+    },
+  "title" : "KrakenClip_saveToFile",
+  "ports" : [
+    {
+      "objectType" : "ExecPort",
+      "name" : "exec",
+      "nodePortType" : "IO",
+      "execPortType" : "IO",
+      "typeSpec" : "Execute"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "clipRef",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "KrakenClip"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "filePath",
+      "nodePortType" : "Out",
+      "execPortType" : "In",
+      "typeSpec" : "String"
+      },
+    {
+      "objectType" : "ExecPort",
+      "name" : "result",
+      "nodePortType" : "In",
+      "execPortType" : "Out",
+      "typeSpec" : "Boolean"
+      }
+    ],
+  "extDeps" : {
+    "KrakenAnimation" : "*"
+    },
+  "presetGUID" : "B262B649A6706BC23CD71DC2372D6317",
+  "code" : "require KrakenAnimation;
+
+dfgEntry {
+  Ref<KrakenClip> clipRef_ref = clipRef;
+  result = KrakenClip_saveToFile(clipRef_ref, filePath);
+}
+"
+  }
